@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account — NairaPlus</title>
+<meta name="theme-color" content="#1B7340">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="mark" style="width:34px;height:34px;background:var(--green);border-radius:8px;color:var(--paper);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:700;">N+</span>
+      <strong>NairaPlus</strong>
+    </div>
+    <h1>Create your account</h1>
+    <p class="sub">Start earning real cash for honest reviews.</p>
+
+    <form onsubmit="return false;">
+      <div class="row-2">
+        <div class="field">
+          <label>First name</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-user"></i>
+            <input type="text" placeholder="Chidera">
+          </div>
+        </div>
+        <div class="field">
+          <label>Last name</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-user"></i>
+            <input type="text" placeholder="Okafor">
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Email address</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-envelope"></i>
+          <input type="email" placeholder="chidera@example.com">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Phone number</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-phone"></i>
+          <input type="text" placeholder="+234 801 234 5678">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Referral code (optional)</label>
+        <div class="input-wrap">
+          <i class="fa-solid fa-gift"></i>
+          <input type="text" placeholder="e.g. NPLUS2K3">
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label>Password</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" placeholder="••••••••">
+          </div>
+        </div>
+        <div class="field">
+          <label>Confirm password</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" placeholder="••••••••">
+          </div>
+        </div>
+      </div>
+
+      <div class="check-row">
+        <input type="checkbox" id="terms">
+        <label for="terms">I agree to NairaPlus' <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</label>
+      </div>
+
+      <button class="btn btn-primary btn-block" type="submit">
+        <i class="fa-solid fa-rocket"></i> Create free account
+      </button>
+    </form>
+
+    <div class="trust-badge"><i class="fa-solid fa-building-columns"></i> Bank-verified withdrawals · No hidden fees</div>
+
+    <p class="switch-line">Already have an account? <a href="login.html">Sign in</a></p>
+  </div>
+</div>
+
+</body>
+</html>
