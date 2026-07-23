@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — NairaPlus</title>
+<meta name="theme-color" content="#0F1B13">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  body{padding-bottom:20px;}
+  .admin-header{background:var(--ink);color:var(--paper);padding:20px;}
+  .admin-header h1{color:var(--paper);font-size:20px;}
+  .admin-header p{color:rgba(247,243,232,0.7);font-size:12.5px;margin-top:4px;}
+  .admin-tabs{display:flex;gap:8px;padding:16px 20px 6px;overflow-x:auto;}
+  .admin-tab-btn{padding:9px 16px;border-radius:999px;font-size:13.5px;font-weight:600;background:var(--white);border:1px solid var(--line);color:var(--slate);white-space:nowrap;cursor:pointer;}
+  .admin-tab-btn.active{background:var(--green);color:var(--paper);border-color:var(--green);}
+  .admin-panel{display:none;padding:10px 20px 40px;}
+  .admin-panel.active{display:block;}
+  .wd-card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;}
+  .wd-top{display:flex;justify-content:space-between;margin-bottom:8px;}
+  .wd-amt{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:18px;color:var(--green-deep);}
+  .wd-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:0.04em;}
+  .wd-status.pending{background:rgba(232,163,61,0.15);color:#8a5a15;}
+  .wd-status.paid{background:rgba(27,115,64,0.12);color:var(--green-deep);}
+  .wd-status.rejected{background:rgba(196,58,58,0.1);color:#B23A3A;}
+  .wd-detail{font-size:13px;color:var(--slate);margin-bottom:4px;}
+  .wd-actions{display:flex;gap:10px;margin-top:12px;}
+  .wd-actions .btn{padding:9px 14px;font-size:13px;flex:1;}
+  .biz-row{display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+  .biz-row .info{flex:1;}
+  .biz-row .info h4{font-size:14px;}
+  .biz-row .info span{font-size:12px;color:var(--slate);}
+  .biz-row .toggle-btn{padding:8px 12px;font-size:12px;}
+</style>
+</head>
+<body>
+
+<div class="admin-header">
+  <h1><i class="fa-solid fa-shield-halved"></i> NairaPlus Admin</h1>
+  <p id="adminWhoami">Checking access…</p>
+</div>
+
+<div class="admin-tabs">
+  <button class="admin-tab-btn active" data-tab="withdrawals">Withdrawals</button>
+  <button class="admin-tab-btn" data-tab="tasks">Manage tasks</button>
+</div>
+
+<div class="admin-panel active" id="admin-withdrawals">
+  <div id="withdrawalMsg" class="form-msg" style="display:none;"></div>
+  <div id="withdrawalList"><p style="color:var(--slate);font-size:13px;">Loading…</p></div>
+</div>
+
+<div class="admin-panel" id="admin-tasks">
+  <div class="ref-box" style="background:var(--white);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;">
+    <h3 style="font-size:15px;margin-bottom:12px;">Add a new business</h3>
+    <div class="field"><label>Business name</label><div class="input-wrap"><i class="fa-solid fa-store"></i><input type="text" id="newBizName" placeholder="e.g. Amaka's Cafe"></div></div>
+    <div class="field"><label>Category</label><div class="input-wrap"><i class="fa-solid fa-tag"></i><input type="text" id="newBizCategory" placeholder="e.g. Restaurant"></div></div>
+    <button class="btn btn-primary btn-block" onclick="addBusiness()"><i class="fa-solid fa-plus"></i> Add business</button>
+  </div>
+  <div id="businessList"><p style="color:var(--slate);font-size:13px;">Loading…</p></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script src="app-auth.js"></script>
+<script>
+  let admin = null;
+
+  async function initAdmin(){
+    admin = await npRequireAuth();
+    if(!admin) return;
+    if(!admin.is_admin){
+      document.body.innerHTML = '<div style="padding:60px 24px;text-align:center;"><h2>Not authorized</h2><p style="color:var(--slate);margin-top:8px;">This account does not have admin access.</p><a href="dashboard.html" class="btn btn-primary" style="margin-top:20px;display:inline-flex;">Back to dashboard</a></div>';
+      return;
+    }
+    document.getElementById('adminWhoami').textContent = 'Signed in as ' + admin.first_name + ' ' + admin.last_name;
+    await loadWithdrawals();
+    await loadBusinesses();
+  }
+
+  async function loadWithdrawals(){
+    const {data} = await supabase
+      .from('withdrawals')
+      .select('*, profiles(first_name, last_name, email)')
+      .order('created_at', {ascending:false});
+
+    const list = document.getElementById('withdrawalList');
+    if(!data || data.length === 0){
+      list.innerHTML = '<p style="color:var(--slate);font-size:13px;">No withdrawal requests yet.</p>';
+      return;
+    }
+    list.innerHTML = data.map(w => `
+      <div class="wd-card">
+        <div class="wd-top">
+          <span class="wd-amt">₦${Number(w.amount).toLocaleString()}</span>
+          <span class="wd-status ${w.status}">${w.status}</span>
+        </div>
+        <div class="wd-detail"><b>${w.profiles?.first_name || ''} ${w.profiles?.last_name || ''}</b> · ${w.profiles?.email || ''}</div>
+        <div class="wd-detail">${w.bank_name} · ${w.account_number} ${w.account_name ? '(' + w.account_name + ')' : ''}</div>
+        <div class="wd-detail" style="font-size:11.5px;">Requested ${new Date(w.created_at).toLocaleString()}</div>
+        ${w.status === 'pending' ? `
+          <div class="wd-actions">
+            <button class="btn btn-primary" onclick="payWithdrawal(${w.id}, '${bankCodeFor(w.bank_name)}')"><i class="fa-solid fa-money-bill-transfer"></i> Approve & pay</button>
+            <button class="btn btn-ghost" onclick="rejectWithdrawal(${w.id})"><i class="fa-solid fa-xmark"></i> Reject</button>
+          </div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function bankCodeFor(bankName){
+    const banks = {
+      'Access Bank':'044','Zenith Bank':'057','GTBank':'058','First Bank of Nigeria':'011','UBA':'033',
+      'Fidelity Bank':'070','Union Bank':'032','Sterling Bank':'232','Wema Bank':'035','Stanbic IBTC':'221',
+      'Ecobank':'050','FCMB':'214','Keystone Bank':'082','Unity Bank':'215','Polaris Bank':'076',
+      'Opay':'999992','Kuda Bank':'50211','PalmPay':'999991','Moniepoint':'50515'
+    };
+    return banks[bankName] || '';
+  }
+
+  async function payWithdrawal(withdrawalId, bankCode){
+    const msgBox = document.getElementById('withdrawalMsg');
+    if(!bankCode){
+      msgBox.textContent = 'Could not match this bank to a Paystack code — check spelling in the withdrawals table.';
+      msgBox.className = 'form-msg err'; msgBox.style.display = 'block';
+      return;
+    }
+    msgBox.textContent = 'Processing payment…'; msgBox.className = 'form-msg ok'; msgBox.style.display = 'block';
+
+    const {data: {session}} = await supabase.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/paystack-transfer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ withdrawal_id: withdrawalId, bank_code: bankCode })
+    });
+    const result = await res.json();
+    msgBox.textContent = result.message;
+    msgBox.className = 'form-msg ' + (result.success ? 'ok' : 'err');
+    if(result.success) await loadWithdrawals();
+  }
+
+  async function rejectWithdrawal(withdrawalId){
+    const note = prompt('Reason for rejecting (visible to admin only):') || '';
+    const {error} = await supabase.rpc('reject_withdrawal', { p_withdrawal_id: withdrawalId, p_note: note });
+    const msgBox = document.getElementById('withdrawalMsg');
+    if(error){
+      msgBox.textContent = error.message; msgBox.className = 'form-msg err'; msgBox.style.display = 'block';
+    } else {
+      msgBox.textContent = 'Withdrawal rejected and balance refunded.'; msgBox.className = 'form-msg ok'; msgBox.style.display = 'block';
+      await loadWithdrawals();
+    }
+  }
+
+  async function loadBusinesses(){
+    const {data} = await supabase.from('businesses').select('*').order('id');
+    const list = document.getElementById('businessList');
+    if(!data || data.length === 0){
+      list.innerHTML = '<p style="color:var(--slate);font-size:13px;">No businesses yet.</p>';
+      return;
+    }
+    list.innerHTML = data.map(b => `
+      <div class="biz-row">
+        <div class="info"><h4>${b.name}</h4><span>${b.category}</span></div>
+        <button class="btn ${b.active ? 'btn-ghost' : 'btn-primary'} toggle-btn" onclick="toggleBusiness(${b.id}, ${!b.active})">
+          ${b.active ? 'Deactivate' : 'Activate'}
+        </button>
+      </div>
+    `).join('');
+  }
+
+  async function toggleBusiness(id, newState){
+    await supabase.from('businesses').update({active: newState}).eq('id', id);
+    await loadBusinesses();
+  }
+
+  async function addBusiness(){
+    const name = document.getElementById('newBizName').value.trim();
+    const category = document.getElementById('newBizCategory').value.trim();
+    if(!name || !category) return alert('Enter both a name and category.');
+    await supabase.from('businesses').insert({name, category});
+    document.getElementById('newBizName').value = '';
+    document.getElementById('newBizCategory').value = '';
+    await loadBusinesses();
+  }
+
+  document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.admin-panel').forEach(p => p.classList.toggle('active', p.id === 'admin-' + btn.dataset.tab));
+    });
+  });
+
+  initAdmin();
+</script>
+</body>
+</html>
